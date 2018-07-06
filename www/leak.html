@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<body>
+Reload this page.<br />
+Window object is duplicated and remains as zombie in Safari.
+<script type='text/javascript'>
+    // this entity is duplicated as well
+    window.testBuf = new ArrayBuffer(123456789);
+
+    (function(){
+        if (!indexedDB) {
+            alert('this browsser does not support indexed db.');
+            return;
+        }
+        var dbName    = 'test_idb';
+        var dbVersion = 1;
+        var storeName = 'test_store';
+        var key       = 'test_key';
+
+        var openRequest = indexedDB.open(dbName, dbVersion);
+
+        function openOnsuccess() {
+            var transaction = openRequest.result.transaction([storeName], 'readwrite');
+            var store = transaction.objectStore(storeName);
+            store.put(key, 1);
+            store.openCursor().onsuccess = function(e) {
+                // referencing target.result cause memory leak
+                var result = e.target.result;
+            };
+        }
+
+        function openOnupgradeneeded() {
+            openRequest.result.createObjectStore(storeName);
+        }
+
+        openRequest.onupgradeneeded = openOnupgradeneeded;
+        openRequest.onsuccess       = openOnsuccess;
+    }());
+</script>
+</body>
+</html>
